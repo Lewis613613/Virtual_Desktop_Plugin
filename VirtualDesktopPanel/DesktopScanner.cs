@@ -137,7 +137,7 @@ public class DesktopScanner
     {
         try
         {
-            Icon? icon = Icon.ExtractAssociatedIcon(path);
+            using Icon? icon = Icon.ExtractAssociatedIcon(path);
 
             if (icon == null) return null;
 
