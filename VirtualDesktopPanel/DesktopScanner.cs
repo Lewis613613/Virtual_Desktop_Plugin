@@ -82,6 +82,9 @@ public class DesktopScanner
                     Label = Path.GetFileNameWithoutExtension(e.FullPath),
                     IconImage = ExtractIcon(e.FullPath)
                 };
+                if (Path.GetExtension(e.FullPath).Equals(".lnk", StringComparison.OrdinalIgnoreCase))
+                    icon.IsBroken = !IsLnkValid(e.FullPath);
+                Icons.Add(icon);
                 IconAdded?.Invoke(icon);
             });
         };
@@ -90,6 +93,7 @@ public class DesktopScanner
         {
             System.Windows.Application.Current?.Dispatcher.Invoke(() =>
             {
+                Icons.RemoveAll(i => i.FilePath == e.FullPath);
                 IconRemoved?.Invoke(e.FullPath);
             });
         };
@@ -99,6 +103,12 @@ public class DesktopScanner
             System.Windows.Application.Current?.Dispatcher.Invoke(() =>
             {
                 if (IsHiddenSystem(e.FullPath)) return;
+                var icon = Icons.Find(i => i.FilePath == e.OldFullPath);
+                if (icon != null)
+                {
+                    icon.FilePath = e.FullPath;
+                    icon.Label = Path.GetFileNameWithoutExtension(e.FullPath);
+                }
                 IconRenamed?.Invoke(e.OldFullPath, e.FullPath);
             });
         };
@@ -124,13 +134,20 @@ public class DesktopScanner
 
     private static bool IsLnkValid(string lnkPath)
     {
-        // .lnk files are opaque; just check they're non-empty
         try
         {
-            var info = new FileInfo(lnkPath);
-            return info.Length > 0;
+            Type? shellType = Type.GetTypeFromProgID("WScript.Shell");
+            if (shellType == null) return true; // can't verify, assume valid
+
+            dynamic shell = Activator.CreateInstance(shellType)!;
+            dynamic shortcut = shell.CreateShortcut(lnkPath);
+            string target = shortcut.TargetPath ?? "";
+            if (string.IsNullOrEmpty(target)) return false;
+
+            target = Environment.ExpandEnvironmentVariables(target);
+            return File.Exists(target) || Directory.Exists(target);
         }
-        catch { return false; }
+        catch { return true; } // can't verify, assume valid
     }
 
     public static ImageSource? ExtractIcon(string path)

@@ -5,7 +5,7 @@ namespace VirtualDesktopPanel;
 
 public class DesktopIcon
 {
-    public string FilePath { get; init; } = string.Empty;
+    public string FilePath { get; set; } = string.Empty;
     public string Label { get; set; } = string.Empty;
     public int Row { get; set; }
     public int Col { get; set; }
