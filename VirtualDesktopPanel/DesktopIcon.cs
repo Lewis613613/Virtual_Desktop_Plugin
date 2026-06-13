@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Media;
 
 namespace VirtualDesktopPanel;
@@ -25,7 +26,7 @@ public class DesktopIcon
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"无法打开:\n{FilePath}\n\n{ex.Message}", "错误",
+            System.Windows.MessageBox.Show($"无法打开:\n{FilePath}\n\n{ex.Message}", "错误",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
