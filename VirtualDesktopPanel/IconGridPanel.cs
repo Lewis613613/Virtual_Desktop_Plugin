@@ -77,6 +77,7 @@ public class IconGridPanel : Panel
     {
         Children.Clear();
         _iconMap.Clear();
+        _emptyMessage = null;
 
         foreach (var icon in icons)
         {
