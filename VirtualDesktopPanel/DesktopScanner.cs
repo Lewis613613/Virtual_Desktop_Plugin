@@ -10,68 +10,87 @@ namespace VirtualDesktopPanel;
 
 public class DesktopScanner
 {
-    public string DesktopPath { get; }
+    public string UserDesktopPath { get; }
+    public string PublicDesktopPath { get; }
+
     public List<DesktopIcon> Icons { get; private set; } = new();
 
     public event Action<DesktopIcon>? IconAdded;
     public event Action<string>? IconRemoved;
     public event Action<string, string>? IconRenamed;
 
-    private FileSystemWatcher? _watcher;
+    private FileSystemWatcher? _userWatcher;
+    private FileSystemWatcher? _publicWatcher;
 
     public DesktopScanner()
     {
-        DesktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        UserDesktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        PublicDesktopPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory));
     }
 
     /// <summary>
-    /// Enumerate all files/folders/.lnk/.url on the desktop.
-    /// Returns unsorted list; layout assignment is done by LayoutManager.
+    /// Enumerate all files from both user and public desktop.
+    /// If the same filename exists in both, the user's version wins.
     /// </summary>
     public List<DesktopIcon> Scan()
     {
         Icons = new List<DesktopIcon>();
-        if (!Directory.Exists(DesktopPath))
-            return Icons;
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        var entries = Directory.GetFileSystemEntries(DesktopPath)
-            .Where(f => !IsHiddenSystem(f))
-            .OrderBy(f => f)
-            .ToList();
-
-        foreach (var path in entries)
-        {
-            var icon = new DesktopIcon
-            {
-                FilePath = path,
-                Label = Path.GetFileNameWithoutExtension(path),
-                IconImage = ExtractIcon(path)
-            };
-
-            // Check if .lnk target exists
-            if (Path.GetExtension(path).Equals(".lnk", StringComparison.OrdinalIgnoreCase))
-            {
-                icon.IsBroken = !IsLnkValid(path);
-            }
-
-            Icons.Add(icon);
-        }
+        // Scan user desktop first (takes priority)
+        ScanPath(UserDesktopPath, seen);
+        // Scan public desktop (skip already-seen filenames)
+        ScanPath(PublicDesktopPath, seen);
 
         return Icons;
     }
 
+    private void ScanPath(string path, HashSet<string> seen)
+    {
+        if (!Directory.Exists(path)) return;
+
+        var entries = Directory.GetFileSystemEntries(path)
+            .Where(f => !IsHiddenSystem(f))
+            .OrderBy(f => f);
+
+        foreach (var filePath in entries)
+        {
+            var name = Path.GetFileName(filePath);
+            if (!seen.Add(name)) continue; // duplicate, skip
+
+            var icon = new DesktopIcon
+            {
+                FilePath = filePath,
+                Label = Path.GetFileNameWithoutExtension(filePath),
+                IconImage = ExtractIcon(filePath)
+            };
+
+            if (Path.GetExtension(filePath).Equals(".lnk", StringComparison.OrdinalIgnoreCase))
+                icon.IsBroken = !IsLnkValid(filePath);
+
+            Icons.Add(icon);
+        }
+    }
+
     public void StartWatching()
     {
-        if (_watcher != null) return;
+        _userWatcher = CreateWatcher(UserDesktopPath);
+        _publicWatcher = CreateWatcher(PublicDesktopPath);
+    }
 
-        _watcher = new FileSystemWatcher(DesktopPath)
+    private FileSystemWatcher CreateWatcher(string path)
+    {
+        if (!Directory.Exists(path)) return null!;
+
+        var watcher = new FileSystemWatcher(path)
         {
             IncludeSubdirectories = false,
             NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName,
             EnableRaisingEvents = true
         };
 
-        _watcher.Created += (_, e) =>
+        watcher.Created += (_, e) =>
         {
             System.Windows.Application.Current?.Dispatcher.Invoke(() =>
             {
@@ -89,7 +108,7 @@ public class DesktopScanner
             });
         };
 
-        _watcher.Deleted += (_, e) =>
+        watcher.Deleted += (_, e) =>
         {
             System.Windows.Application.Current?.Dispatcher.Invoke(() =>
             {
@@ -98,7 +117,7 @@ public class DesktopScanner
             });
         };
 
-        _watcher.Renamed += (_, e) =>
+        watcher.Renamed += (_, e) =>
         {
             System.Windows.Application.Current?.Dispatcher.Invoke(() =>
             {
@@ -112,12 +131,16 @@ public class DesktopScanner
                 IconRenamed?.Invoke(e.OldFullPath, e.FullPath);
             });
         };
+
+        return watcher;
     }
 
     public void StopWatching()
     {
-        _watcher?.Dispose();
-        _watcher = null;
+        _userWatcher?.Dispose();
+        _userWatcher = null;
+        _publicWatcher?.Dispose();
+        _publicWatcher = null;
     }
 
     private static bool IsHiddenSystem(string path)
@@ -137,7 +160,7 @@ public class DesktopScanner
         try
         {
             Type? shellType = Type.GetTypeFromProgID("WScript.Shell");
-            if (shellType == null) return true; // can't verify, assume valid
+            if (shellType == null) return true;
 
             dynamic shell = Activator.CreateInstance(shellType)!;
             dynamic shortcut = shell.CreateShortcut(lnkPath);
@@ -147,7 +170,7 @@ public class DesktopScanner
             target = Environment.ExpandEnvironmentVariables(target);
             return File.Exists(target) || Directory.Exists(target);
         }
-        catch { return true; } // can't verify, assume valid
+        catch { return true; }
     }
 
     public static ImageSource? ExtractIcon(string path)
