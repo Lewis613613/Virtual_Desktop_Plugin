@@ -3,3 +3,6 @@ obj/
 *.user
 *.suo
 .vs/
+publish/
+.claude/
+.superpowers/
