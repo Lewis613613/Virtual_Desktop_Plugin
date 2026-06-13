@@ -1,5 +1,4 @@
 using System;
-using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace VirtualDesktopPanel;
@@ -61,7 +60,7 @@ public static class NativeMethods
         public string pFrom;
         [MarshalAs(UnmanagedType.LPWStr)]
         public string pTo;
-        public ushort fFlags;
+        public uint fFlags;
         public bool fAnyOperationsAborted;
         public IntPtr hNameMappings;
         [MarshalAs(UnmanagedType.LPWStr)]
@@ -69,8 +68,8 @@ public static class NativeMethods
     }
 
     public const uint FO_DELETE = 0x0003;
-    public const ushort FOF_ALLOWUNDO = 0x0040;
-    public const ushort FOF_NOCONFIRMATION = 0x0010;
+    public const uint FOF_ALLOWUNDO = 0x0040;
+    public const uint FOF_NOCONFIRMATION = 0x0010;
 
     /// <summary>
     /// Get the bounds of the taskbar and which edge of the screen it sits on.
