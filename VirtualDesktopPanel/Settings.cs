@@ -141,7 +141,21 @@ public static class Settings
 
     private static void CreateShortcut(string shortcutPath)
     {
-        // Uses Shell32 COM to create .lnk
-        // Placeholder — detailed in Task 12
+        try
+        {
+            var exePath = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(exePath)) return;
+
+            Type? shellType = Type.GetTypeFromProgID("WScript.Shell");
+            if (shellType == null) return;
+
+            dynamic shell = Activator.CreateInstance(shellType)!;
+            dynamic shortcut = shell.CreateShortcut(shortcutPath);
+            shortcut.TargetPath = exePath;
+            shortcut.WorkingDirectory = Path.GetDirectoryName(exePath);
+            shortcut.Description = "Virtual Desktop Panel";
+            shortcut.Save();
+        }
+        catch { /* non-critical */ }
     }
 }
