@@ -43,7 +43,18 @@ public class IconGridPanel : Panel
         {
             child.Measure(new Size(CellWidth, CellHeight));
         }
-        return availableSize;
+
+        // Calculate actual desired size from grid content
+        int maxCol = 0, maxRow = 0;
+        foreach (var icon in _iconMap.Values)
+        {
+            if (icon.Col > maxCol) maxCol = icon.Col;
+            if (icon.Row > maxRow) maxRow = icon.Row;
+        }
+
+        double desiredWidth = PaddingLeft + (maxCol + 1) * (CellWidth + HorizontalSpacing);
+        double desiredHeight = PaddingTop + (maxRow + 1) * (CellHeight + VerticalSpacing);
+        return new Size(Math.Max(desiredWidth, 200), Math.Max(desiredHeight, 200));
     }
 
     protected override Size ArrangeOverride(Size finalSize)
