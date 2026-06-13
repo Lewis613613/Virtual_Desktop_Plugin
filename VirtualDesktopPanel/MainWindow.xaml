@@ -16,7 +16,7 @@
             BorderThickness="1"
             BorderBrush="#30FFFFFF">
         <Border.Background>
-            <SolidColorBrush x:Name="PanelBackgroundBrush" Color="#1a1a2e" Opacity="0.85"/>
+            <SolidColorBrush x:Name="PanelBackgroundBrush" Color="#1a1a2e"/>
         </Border.Background>
 
         <Grid Margin="0">

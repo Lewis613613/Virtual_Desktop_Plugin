@@ -127,7 +127,6 @@ public partial class MainWindow : Window
         var color = (WpfColor)WpfColorConverter.ConvertFromString(s.BackgroundColor);
         color.A = (byte)(s.BackgroundOpacity * 255);
         PanelBackgroundBrush.Color = color;
-        PanelBackgroundBrush.Opacity = s.BackgroundOpacity;
 
         IconGrid.CellWidth = s.GridCellWidth;
         IconGrid.CellHeight = s.GridCellHeight;
