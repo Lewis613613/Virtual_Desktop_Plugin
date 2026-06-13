@@ -79,7 +79,7 @@ public class TrayIcon : IDisposable
 
     private static Icon CreateTrayIcon()
     {
-        var bitmap = new Bitmap(16, 16);
+        using var bitmap = new Bitmap(16, 16);
         using (var g = Graphics.FromImage(bitmap))
         {
             g.Clear(Color.Transparent);
