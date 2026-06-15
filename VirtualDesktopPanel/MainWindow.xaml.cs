@@ -43,8 +43,10 @@ public partial class MainWindow : Window
 
         IconGrid.HideEmptyMessage();
 
+        int maxCols = ComputeMaxColumns();
+        IconGrid.MaxColumns = maxCols;
         var positions = LayoutManager.MergeWithDisk(
-            icons.ConvertAll(i => i.FilePath));
+            icons.ConvertAll(i => i.FilePath), maxCols);
 
         foreach (var icon in icons)
         {
@@ -119,6 +121,24 @@ public partial class MainWindow : Window
         Top = Math.Max(screen.WorkingArea.Top, top);
         Width = width;
         Height = height;
+
+        IconGrid.MaxColumns = ComputeMaxColumns(width);
+    }
+
+    private int ComputeMaxColumns(double windowWidth)
+    {
+        double available = windowWidth - 2 - SystemParameters.VerticalScrollBarWidth;
+        int cols = (int)((available - IconGrid.PaddingLeft)
+            / (IconGrid.CellWidth + IconGrid.HorizontalSpacing));
+        return Math.Max(1, cols);
+    }
+
+    private int ComputeMaxColumns()
+    {
+        var screen = NativeMethods.GetTaskbarScreen();
+        var s = Settings.Current;
+        double width = screen.WorkingArea.Width * s.PanelWidthPercent / 100.0;
+        return ComputeMaxColumns(width);
     }
 
     private void ApplyAppearance()
@@ -176,7 +196,7 @@ public partial class MainWindow : Window
         foreach (var i in _scanner.Icons)
             existingPaths.Add(i.FilePath);
 
-        var positions = LayoutManager.MergeWithDisk(existingPaths);
+        var positions = LayoutManager.MergeWithDisk(existingPaths, IconGrid.MaxColumns);
         if (positions.TryGetValue(icon.FilePath, out var pos))
         {
             icon.Row = pos.Row;

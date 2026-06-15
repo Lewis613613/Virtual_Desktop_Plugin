@@ -28,6 +28,7 @@ public class IconGridPanel : Panel
     public int VerticalSpacing { get; set; } = 16;
     public int PaddingLeft { get; set; } = 24;
     public int PaddingTop { get; set; } = 24;
+    public int MaxColumns { get; set; } = 20;
 
     public event Action<DesktopIcon, int, int>? IconMoved; // icon, newRow, newCol
     public event Action<DesktopIcon>? IconDoubleClicked;
@@ -360,7 +361,7 @@ public class IconGridPanel : Panel
 
             int newCol = (int)Math.Round((currentPos.X - PaddingLeft) / (double)(CellWidth + HorizontalSpacing));
             int newRow = (int)Math.Round((currentPos.Y - PaddingTop) / (double)(CellHeight + VerticalSpacing));
-            newCol = Math.Max(0, newCol);
+            newCol = Math.Clamp(newCol, 0, MaxColumns - 1);
             newRow = Math.Max(0, newRow);
 
             if (_iconMap.TryGetValue(_draggingElement, out var icon))
@@ -403,7 +404,7 @@ public class IconGridPanel : Panel
         {
             if (!occupied.Contains((row, col))) return 0;
             col++;
-            if (col >= 20) { col = 0; row++; }
+            if (col >= MaxColumns) { col = 0; row++; }
         }
     }
 

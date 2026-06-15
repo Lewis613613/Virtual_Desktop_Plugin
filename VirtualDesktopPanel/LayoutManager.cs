@@ -40,7 +40,7 @@ public static class LayoutManager
     /// Files in JSON but not on disk are dropped.
     /// Files on disk but not in JSON are placed at the first available empty slot.
     /// </summary>
-    public static Dictionary<string, IconPosition> MergeWithDisk(List<string> filePaths)
+    public static Dictionary<string, IconPosition> MergeWithDisk(List<string> filePaths, int maxColumns = 20)
     {
         _layout = LoadLayout();
 
@@ -62,7 +62,7 @@ public static class LayoutManager
         {
             if (result.ContainsKey(path)) continue;
 
-            var slot = FindEmptySlot(occupied);
+            var slot = FindEmptySlot(occupied, maxColumns);
             result[path] = new IconPosition { Row = slot.row, Col = slot.col };
             occupied.Add(slot);
         }
@@ -70,7 +70,7 @@ public static class LayoutManager
         return result;
     }
 
-    private static (int row, int col) FindEmptySlot(HashSet<(int row, int col)> occupied)
+    private static (int row, int col) FindEmptySlot(HashSet<(int row, int col)> occupied, int maxColumns = 20)
     {
         int col = 0, row = 0;
         while (true)
@@ -78,7 +78,7 @@ public static class LayoutManager
             if (!occupied.Contains((row, col)))
                 return (row, col);
             col++;
-            if (col >= 20) { col = 0; row++; }
+            if (col >= maxColumns) { col = 0; row++; }
         }
     }
 
